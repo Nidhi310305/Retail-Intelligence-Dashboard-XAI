@@ -53,8 +53,8 @@ business users.
 | 02 — Automatic EDA | Dataset summary, distributions, correlations | ✅ Complete |
 | 03 — Business KPIs | Total Sales, Profit, Regional & Category performance | ✅ Complete |
 | 04 — Sales Forecasting | Random Forest on aggregated monthly data | ✅ Complete |
-| 05 — Customer Segmentation | KMeans clustering on RFM features | 🔄 In Progress |
-| 06 — Anomaly Detection | Isolation Forest for unusual transactions | ⏳ Pending |
+| 05 — Customer Segmentation | KMeans clustering on RFM features |  |✅ Complete |
+| 06 — Anomaly Detection | Isolation Forest for unusual transactions | 🔄 In Progress |
 | 07 — Explainable AI | SHAP values for prediction transparency | ⏳ Pending |
 | 08 — Business Recommendations | Rule-based actionable insights from analysis | ⏳ Pending |
 
