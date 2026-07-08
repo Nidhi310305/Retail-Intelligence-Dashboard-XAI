@@ -49,7 +49,7 @@ business users.
 
 | Module | Description | Status |
 |---|---|---|
-| 01 — Dataset Upload | Upload retail CSV, validate columns | 🔄 In Progress |
+| 01 — Dataset Upload | Upload retail CSV, validate columns |✅ Complete |
 | 02 — Automatic EDA | Dataset summary, distributions, correlations | ✅ Complete |
 | 03 — Business KPIs | Total Sales, Profit, Regional & Category performance | ✅ Complete |
 | 04 — Sales Forecasting | Random Forest on aggregated monthly data | ✅ Complete |
