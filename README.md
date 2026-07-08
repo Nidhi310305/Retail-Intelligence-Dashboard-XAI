@@ -53,7 +53,7 @@ business users.
 | 02 — Automatic EDA | Dataset summary, distributions, correlations | ✅ Complete |
 | 03 — Business KPIs | Total Sales, Profit, Regional & Category performance | ✅ Complete |
 | 04 — Sales Forecasting | Random Forest on aggregated monthly data | ✅ Complete |
-| 05 — Customer Segmentation | KMeans clustering on RFM features |  |✅ Complete |
+| 05 — Customer Segmentation | KMeans clustering on RFM features | ✅ Complete |
 | 06 — Anomaly Detection | Isolation Forest for unusual transactions | 🔄 In Progress |
 | 07 — Explainable AI | SHAP values for prediction transparency | ⏳ Pending |
 | 08 — Business Recommendations | Rule-based actionable insights from analysis | ⏳ Pending |
@@ -126,7 +126,7 @@ Retail-Intelligence-Dashboard-XAI/
 | June 25-27, 2026 | Task 1 complete — Excel EDA, SQL queries, Power BI dashboard |
 | June 29, 2026 | Track 2 started — Colab setup, EDA pipeline complete |
 | July 4, 2026 | Sales Forecasting module attempted, limitations documented |
-| July 5, 2026 | KMeans Customer Segmentation — in progress |
+| July 5, 2026 | KMeans Customer Segmentation — completed |
 
 ---
 
