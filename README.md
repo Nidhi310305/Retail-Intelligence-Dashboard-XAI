@@ -1,108 +1,151 @@
-# Retail Intelligence Dashboard with Explainable AI
-### AI-Enabled Business Analytics | Academic Project | 7th Semester Internship Extension
-
-
+# 🛍️ Retail Intelligence Dashboard with Explainable AI
+### AI-Enabled Business Analytics | Explainable AI | RAG Learning Journey
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
-
-
-
-
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)
-
-
-
-
 ![SHAP](https://img.shields.io/badge/Explainability-SHAP-green)
-
-
-
-
+![RAG](https://img.shields.io/badge/LLM-RAG-purple)
 ![Status](https://img.shields.io/badge/Status-In%20Progress-yellow)
 
+---
 
+# 🧠 Project Overview
+
+An AI-powered Retail Intelligence Dashboard that transforms raw retail sales data into actionable business intelligence by combining traditional analytics, Machine Learning, Explainable AI, and modern Large Language Model (LLM) concepts.
+
+Originally developed as an academic extension of my Business Analytics internship at Maincrafts Technology, this project has evolved into a comprehensive AI portfolio project documenting both implementation and continuous learning in Explainable AI and Retrieval-Augmented Generation (RAG).
 
 ---
 
-## 🧠 Project Overview
+# 🎯 Problem Statement
 
-An AI-powered web dashboard that converts raw retail sales data into 
-actionable business intelligence — combining traditional analytics with 
-Machine Learning and Explainable AI.
+Traditional dashboards answer:
 
-Built as an academic extension of my Business Analytics internship at 
-Maincrafts Technology, this project goes beyond descriptive dashboards 
-to deliver predictive insights and model transparency.
+> **What happened?**
 
----
+This project aims to answer:
 
-## 🎯 Problem Statement
-
-Traditional business dashboards answer *what happened*.
-This dashboard answers *why it happened* and *what will happen next* —
-making ML predictions explainable and actionable for non-technical 
-business users.
+- Why did it happen?
+- What will happen next?
+- Which factors influenced the prediction?
+- How can AI systems retrieve trustworthy information using external knowledge?
 
 ---
 
-## 📦 Modules
+# 📦 Project Modules
 
 | Module | Description | Status |
-|---|---|---|
-| 01 — Dataset Upload | Upload retail CSV, validate columns |✅ Complete |
-| 02 — Automatic EDA | Dataset summary, distributions, correlations | ✅ Complete |
-| 03 — Business KPIs | Total Sales, Profit, Regional & Category performance | ✅ Complete |
-| 04 — Sales Forecasting | Random Forest on aggregated monthly data | ✅ Complete |
-| 05 — Customer Segmentation | KMeans clustering on RFM features | ✅ Complete |
-| 06 — Anomaly Detection | Isolation Forest for unusual transactions | 🔄 In Progress |
-| 07 — Explainable AI | SHAP values for prediction transparency | ⏳ Pending |
-| 08 — Business Recommendations | Rule-based actionable insights from analysis | ⏳ Pending |
+|---------|-------------|--------|
+| 01 — Dataset Upload | Upload and validate retail CSV | ✅ Complete |
+| 02 — Automatic EDA | Statistical summaries and visualization | ✅ Complete |
+| 03 — Business KPIs | Sales, Profit, Region & Category Analysis | ✅ Complete |
+| 04 — Sales Forecasting | Random Forest Forecasting | ✅ Complete |
+| 05 — Customer Segmentation | KMeans using RFM Features | ✅ Complete |
+| 06 — Anomaly Detection | Isolation Forest | 🔄 In Progress |
+| 07 — Explainable AI | SHAP Analysis | ⏳ Pending |
+| 08 — Business Recommendations | Rule-Based Insights | ⏳ Pending |
+| 09 — Retrieval-Augmented Generation (Learning) | RAG Concepts & Implementation | 🚀 Ongoing |
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠 Tech Stack
 
-**Data Processing**
-- Python 3.13
-- Pandas, NumPy
+## Data Analytics
 
-**Visualization**
-- Plotly, Matplotlib, Seaborn
+- Python
+- Pandas
+- NumPy
 
-**Machine Learning**
-- Scikit-learn (Random Forest, KMeans, Isolation Forest)
+## Visualization
 
-**Explainability**
-- SHAP (SHapley Additive exPlanations)
+- Plotly
+- Matplotlib
+- Seaborn
 
-**Dashboard**
+## Machine Learning
+
+- Scikit-learn
+- Random Forest
+- KMeans
+- Isolation Forest
+
+## Explainable AI
+
+- SHAP
+
+## Dashboard
+
 - Streamlit
 
+## Large Language Models
+
+- LangChain
+- Hugging Face
+- FAISS
+- Retrieval-Augmented Generation (RAG)
+
 ---
 
-## 📊 Dataset
+# 📊 Dataset
 
 Sample Superstore Dataset (Kaggle)
-- 9,994 retail transactions
-- 21 features including Sales, Profit, Discount, Region, Category
-- Date range: 2014–2017
+
+- 9,994 Transactions
+- 21 Features
+- Sales
+- Profit
+- Region
+- Category
+- Discount
+- Order Date
 
 ---
 
-## 🔍 Key Findings So Far
+# 🔍 Key Findings
 
-- West region drives 31.58% of total revenue
-- Technology category = 50.8% of total profit
-- Every discount above 20% produces negative average profit (cross-validated via SQL + scatter analysis)
-- 18.72% of all transactions generated a loss
-- Sales follow strong Q4 seasonal pattern — November peaks at $352K
-- Individual transaction-level forecasting shows high variance (R2 negative) — external signals required for production-grade forecasting
+- West Region contributes **31.58%** of total sales.
+- Technology category generates **50.8%** of total profit.
+- Discounts above **20%** generally lead to negative average profit.
+- Approximately **18.72%** of all transactions resulted in losses.
+- Sales exhibit strong seasonal behavior with Q4 peaks.
+- Transaction-level forecasting requires richer external features for robust prediction.
 
 ---
 
-## 📁 Repository Structure
-```
+# 🤖 Retrieval-Augmented Generation (RAG) Learning Journey
+
+Alongside the dashboard, I am documenting my hands-on learning journey in Retrieval-Augmented Generation.
+
+## Current Topics
+
+- Introduction to Large Language Models
+- Why RAG is needed
+- Limitations of LLMs
+- Hallucinations
+- Knowledge Cutoff
+- Private Knowledge
+- Retrieval vs Training
+
+## Upcoming Topics
+
+- Embeddings
+- Semantic Search
+- Chunking
+- Vector Databases
+- FAISS
+- Retrieval Pipeline
+- Prompt Augmentation
+- LangChain
+- Local RAG
+- Advanced RAG Architectures
+
+---
+
+# 📂 Repository Structure
+
+```text
 Retail-Intelligence-Dashboard-XAI/
+
 │
 ├── data/
 │   └── Sample-Superstore.csv
@@ -111,40 +154,87 @@ Retail-Intelligence-Dashboard-XAI/
 │   └── Superstore_EDA_ML.ipynb
 │
 ├── app/
-│   └── app.py (Streamlit dashboard — coming soon)
+│   └── app.py
 │
 ├── assets/
 │   └── screenshots/
 │
+├── learning/
+│
+│   └── rag/
+│       ├── 01-about-rag/
+│       ├── 02-embeddings/
+│       ├── 03-vector-database/
+│       ├── 04-chunking/
+│       ├── 05-retrieval/
+│       ├── 06-augmentation/
+│       ├── 07-generation/
+│       ├── 08-langchain/
+│       ├── 09-local-rag/
+│       └── 10-advanced-rag/
+│
 └── README.md
----
 ```
-## 📈 Progress Log
-
-| Date | Update |
-|---|---|
-| June 25-27, 2026 | Task 1 complete — Excel EDA, SQL queries, Power BI dashboard |
-| June 29, 2026 | Track 2 started — Colab setup, EDA pipeline complete |
-| July 4, 2026 | Sales Forecasting module attempted, limitations documented |
-| July 5, 2026 | KMeans Customer Segmentation — completed |
 
 ---
 
-## 🎓 Academic Context
+# 📈 Progress Log
 
-**Student:** Nidhi Sharma
-**Program:** B.Tech CSE (AI & ML) — 3rd Year
-**College:** JNGEC Sundernagar, Himachal Pradesh
-**Minor:** Data Science & ML, IIT Mandi
-**Internship:** Maincrafts Technology | Business Analytics | June–August 2026
-
----
-
-## 🚀 Deployment
-
-Streamlit Cloud deployment coming upon project completion.
-Live link will be updated here.
+| Date | Progress |
+|------|----------|
+| June 25–27, 2026 | Internship Task 1 — Excel, SQL & Power BI Dashboard |
+| June 29, 2026 | Python EDA Pipeline |
+| July 4, 2026 | Sales Forecasting |
+| July 5, 2026 | Customer Segmentation |
+| August 2026 | Started Retrieval-Augmented Generation (RAG) Learning Journey |
 
 ---
 
-*Actively being built — commits reflect real learning progress.*
+# 🎓 Academic Context
+
+**Student**
+
+Nidhi Sharma
+
+**Program**
+
+B.Tech Computer Science & Engineering (AI & ML)
+
+**College**
+
+Jawaharlal Nehru Government Engineering College (JNGEC), Sundernagar
+
+**Minor**
+
+Data Science & Machine Learning
+
+**Internship**
+
+Maincrafts Technology
+
+Business Analytics
+
+---
+
+# 🚀 Future Roadmap
+
+- Complete Explainable AI Module
+- Build Local RAG Application using LangChain
+- Integrate RAG with Business Dashboard
+- Deploy using Streamlit Cloud
+- Improve ML Forecasting Pipeline
+- Add Conversational Business Analytics Assistant
+
+---
+
+# 🌱 Learning Philosophy
+
+This repository reflects my approach to learning AI through implementation. Each commit represents a real milestone—from business analytics and machine learning to explainable AI and Retrieval-Augmented Generation—documenting not only completed features but also the concepts explored and lessons learned along the way.
+
+---
+
+## ⭐ Status
+
+**Actively under development.**
+
+New commits represent ongoing implementation, experimentation, and continuous learning in AI, Explainable AI, and Retrieval-Augmented Generation.
