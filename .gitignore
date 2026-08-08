@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+
+# Streamlit
+.streamlit/
+
+# Local secrets
+.env
+
+# Notebook / OS noise
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
