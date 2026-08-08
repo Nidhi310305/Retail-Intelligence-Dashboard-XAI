@@ -18,7 +18,7 @@ from utils.analytics import (
 from utils.column_mapping import EXPECTED_ROLES, infer_column_mapping, resolve_required_roles
 from utils.data_loader import load_dataset, load_sample_dataset
 from utils.llm import get_gemini_client, generate_insights
-from utils.rag import answer_question, build_knowledge_base
+from utils.rag import answer_question, build_dashboard_knowledge_base
 
 
 st.set_page_config(page_title="Retail Intelligence Dashboard", page_icon="📊", layout="wide")
@@ -337,21 +337,27 @@ def render_dashboard() -> None:
     else:
         st.info("Forecasting skipped because the dataset is too small or lacks required temporal/sales structure.")
 
-    st.markdown("### LLM Insights")
+    st.markdown("### Business Insights")
     client = get_gemini_client()
     if client is None:
         st.warning("Insights are temporarily unavailable.")
     else:
-        knowledge_base = build_knowledge_base([
-            f"Total sales: {total_sales:,.0f}" if total_sales is not None else "Total sales not available.",
-            f"Total profit: {total_profit:,.0f}" if total_profit is not None else "Total profit not available.",
-            f"RFM summary: {rfm_artifacts.summary}" if rfm_artifacts is not None else "RFM analysis not available.",
-            f"Anomalies: {anomaly_count} transactions ({anomaly_pct}%)" if anomaly_count is not None else "Anomaly analysis not available.",
-            f"Forecast top feature: {forecast_artifacts.top_feature}" if forecast_artifacts is not None else "Forecast analysis not available.",
-        ])
+        knowledge_base = build_dashboard_knowledge_base(
+            summary_chunks=[
+                f"Total sales: {total_sales:,.0f}" if total_sales is not None else "Total sales not available.",
+                f"Total profit: {total_profit:,.0f}" if total_profit is not None else "Total profit not available.",
+            ],
+            region_sales=region_sales,
+            monthly_sales=monthly,
+            rfm_frame=rfm_artifacts.frame if rfm_artifacts is not None else None,
+            rfm_summary=rfm_artifacts.summary if rfm_artifacts is not None else None,
+            anomaly_artifacts=anomaly_artifacts,
+            forecast_artifacts=forecast_artifacts,
+        )
         llm_question = "Write two concise paragraphs: one on what is working and one on what needs attention."
-        llm_answer = generate_insights("\n".join(knowledge_base), llm_question)
-        st.write(llm_answer)
+        with st.spinner("Preparing your answer..."):
+            llm_answer = generate_insights("\n".join(knowledge_base), llm_question)
+            st.write(llm_answer)
 
     st.markdown("### Chat With the Dashboard")
     if "chat_history" not in st.session_state:
@@ -363,15 +369,18 @@ def render_dashboard() -> None:
 
     query = st.chat_input("Ask a question about the findings, anomalies, sales trend, or customer segments")
     if query:
-        kb = build_knowledge_base([
-            f"Summary: {summary}",
-            f"Customer segmentation: {rfm_artifacts.summary if rfm_artifacts else 'not available'}",
-            f"Anomalies: {anomaly_count} flagged transactions" if anomaly_count is not None else "Anomalies not available",
-            f"Forecast top driver: {forecast_artifacts.top_feature}" if forecast_artifacts is not None else "Forecast not available",
-        ])
+        kb = build_dashboard_knowledge_base(
+            summary_chunks=[f"Summary: {summary}"],
+            region_sales=region_sales,
+            monthly_sales=monthly,
+            rfm_frame=rfm_artifacts.frame if rfm_artifacts is not None else None,
+            rfm_summary=rfm_artifacts.summary if rfm_artifacts is not None else None,
+            anomaly_artifacts=anomaly_artifacts,
+            forecast_artifacts=forecast_artifacts,
+        )
         st.session_state.chat_history.append({"role": "user", "content": query})
         with st.chat_message("assistant"):
-            with st.spinner("Searching findings and generating an answer..."):
+            with st.spinner("Preparing your answer..."):
                 answer = answer_question(query, kb)
                 st.write(answer)
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
