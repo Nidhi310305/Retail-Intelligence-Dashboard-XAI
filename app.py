@@ -96,15 +96,17 @@ def show_landing() -> None:
         uploaded = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx", "xls"])
     with sample_col:
         if st.button("Try with sample data"):
-            st.session_state.dataset = load_sample_dataset(Path(__file__).parent / "Sample - Superstore.csv")
-            st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
-            st.session_state.dashboard_ready = False
+            with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+                st.session_state.dataset = load_sample_dataset(Path(__file__).parent / "Sample - Superstore.csv")
+                st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
+                st.session_state.dashboard_ready = False
             st.rerun()
 
     if uploaded is not None:
-        st.session_state.dataset = load_dataset(uploaded)
-        st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
-        st.session_state.dashboard_ready = False
+        with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+            st.session_state.dataset = load_dataset(uploaded)
+            st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
+            st.session_state.dashboard_ready = False
         st.rerun()
 
 
@@ -169,6 +171,10 @@ def render_mapping_step() -> None:
 
 def _get_col(mapping: dict[str, str], role: str) -> str | None:
     return mapping.get(role)
+
+
+def _escape_dollar_signs(text: str) -> str:
+    return text.replace("$", "\\$")
 
 
 def render_dashboard() -> None:
@@ -355,9 +361,9 @@ def render_dashboard() -> None:
             forecast_artifacts=forecast_artifacts,
         )
         llm_question = "Write two concise paragraphs: one on what is working and one on what needs attention."
-        with st.spinner("Preparing your answer..."):
+        with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
             llm_answer = generate_insights("\n".join(knowledge_base), llm_question)
-            st.write(llm_answer)
+            st.text(_escape_dollar_signs(llm_answer))
 
     st.markdown("### Chat With the Dashboard")
     if "chat_history" not in st.session_state:
@@ -380,9 +386,9 @@ def render_dashboard() -> None:
         )
         st.session_state.chat_history.append({"role": "user", "content": query})
         with st.chat_message("assistant"):
-            with st.spinner("Preparing your answer..."):
+            with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
                 answer = answer_question(query, kb)
-                st.write(answer)
+                st.text(_escape_dollar_signs(answer))
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
 
