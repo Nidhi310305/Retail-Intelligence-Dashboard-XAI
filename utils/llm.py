@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from functools import lru_cache
 from typing import Any
+import traceback
 
 from dotenv import load_dotenv
 
@@ -19,11 +21,14 @@ def _get_api_key() -> str | None:
 def get_gemini_client() -> Any:
     api_key = _get_api_key()
     if not api_key:
+        print("[Gemini] GEMINI_API_KEY / GOOGLE_API_KEY is not set in the environment or .env file.")
         return None
 
     try:
         from google import genai
     except Exception:
+        print("[Gemini] google-genai import failed:")
+        print(traceback.format_exc())
         return None
 
     return genai.Client(api_key=api_key)
@@ -97,6 +102,8 @@ Answer in clear plain language and do not invent facts outside the context.
         )
         return getattr(response, "text", "").strip() or "No response returned by Gemini."
     except Exception as exc:
+        print(f"[Gemini] generate_content failed: {exc}")
+        print(traceback.format_exc())
         return "Insights are temporarily unavailable."
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import traceback
 
 from .llm import generate_insights, get_gemini_client
 
@@ -82,6 +83,8 @@ Answer in 2-4 sentences. Do not invent facts.
         response = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
         return getattr(response, "text", "").strip() or "No response returned by Gemini."
     except Exception as exc:
+        print(f"[Gemini] RAG generate_content failed: {exc}")
+        print(traceback.format_exc())
         return "Answers are temporarily unavailable right now."
 
 

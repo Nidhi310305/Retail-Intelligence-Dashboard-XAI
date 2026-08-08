@@ -4,6 +4,7 @@ from pathlib import Path
 
 import plotly.express as px
 import plotly.graph_objects as go
+import pandas as pd
 import streamlit as st
 
 from utils.analytics import (
