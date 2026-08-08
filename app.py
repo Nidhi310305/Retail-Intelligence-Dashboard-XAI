@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+import re
 from pathlib import Path
 
 import plotly.express as px
@@ -51,6 +53,15 @@ def inject_light_theme() -> None:
                 box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
                 padding: 1rem;
             }
+            .dashboard-heading {
+                margin: 0 0 1rem 0;
+                padding-top: 0.2rem;
+                line-height: 1.15;
+                font-size: 2rem;
+                font-weight: 700;
+                color: #111827;
+                overflow: visible;
+            }
             div.stButton > button {
                 background: #e5e7eb;
                 color: #111827;
@@ -80,6 +91,7 @@ def init_state() -> None:
         "resolved_mapping": None,
         "dashboard_ready": False,
         "analysis": None,
+        "analysis_signature": None,
         "chat_history": [],
         "clarified_columns": {},
     }
@@ -87,9 +99,21 @@ def init_state() -> None:
         st.session_state.setdefault(key, value)
 
 
+def _reset_dataset_state() -> None:
+    st.session_state.dataset = None
+    st.session_state.column_mapping_result = None
+    st.session_state.resolved_mapping = None
+    st.session_state.dashboard_ready = False
+    st.session_state.analysis = None
+    st.session_state.analysis_signature = None
+    st.session_state.chat_history = []
+    st.session_state.clarified_columns = {}
+
+
 def show_landing() -> None:
     st.title("Retail Intelligence Dashboard with Explainable AI")
     st.write("Upload your store's sales data and get instant insights.")
+    st.caption("For the best results, make sure your file includes order date, product, sales, discount, and profit information.")
 
     upload_col, sample_col = st.columns([3, 1])
     with upload_col:
@@ -97,16 +121,16 @@ def show_landing() -> None:
     with sample_col:
         if st.button("Try with sample data"):
             with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+                _reset_dataset_state()
                 st.session_state.dataset = load_sample_dataset(Path(__file__).parent / "Sample - Superstore.csv")
                 st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
-                st.session_state.dashboard_ready = False
             st.rerun()
 
     if uploaded is not None:
         with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+            _reset_dataset_state()
             st.session_state.dataset = load_dataset(uploaded)
             st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
-            st.session_state.dashboard_ready = False
         st.rerun()
 
 
@@ -174,43 +198,38 @@ def _get_col(mapping: dict[str, str], role: str) -> str | None:
 
 
 def _escape_dollar_signs(text: str) -> str:
-    return text.replace("$", "\\$")
+    return text.replace("$", "&#36;")
 
 
-def render_dashboard() -> None:
-    dataset = st.session_state.dataset
-    mapping = st.session_state.resolved_mapping or {}
-    if dataset is None or not mapping:
-        return
+def _format_llm_html(text: str) -> str:
+    protected = (text or "").replace("&#36;", "__DOLLAR_ENTITY__")
+    escaped = html.escape(protected).replace("__DOLLAR_ENTITY__", "&#36;")
+    escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"&#36;(\d[\d,]*(?:\.\d+)?)", r"&#36;<strong>\1</strong>", escaped)
+    escaped = re.sub(r"(\d+(?:\.\d+)?)%", r"<strong>\1%</strong>", escaped)
+    escaped = re.sub(r"R²\s*([0-9]+(?:\.[0-9]+)?)", r"R² <strong>\1</strong>", escaped)
+    paragraphs = [paragraph.strip().replace("\n", "<br>") for paragraph in re.split(r"\n\s*\n", escaped) if paragraph.strip()]
+    if not paragraphs:
+        return ""
+    return "".join(f'<p style="margin:0 0 0.85rem 0; line-height:1.6;">{paragraph}</p>' for paragraph in paragraphs)
 
-    st.subheader("Adaptive Dashboard")
 
+def _render_llm_response(text: str) -> None:
+    st.markdown(_format_llm_html(text), unsafe_allow_html=True)
+
+
+def _dataset_signature(dataset: pd.DataFrame) -> str:
+    return str(pd.util.hash_pandas_object(dataset, index=True).sum())
+
+
+def _prepare_dashboard_analysis(dataset: pd.DataFrame, mapping: dict[str, str]) -> dict[str, object]:
     total_sales = float(dataset[_get_col(mapping, "sales")].sum()) if _get_col(mapping, "sales") in dataset.columns else None
     total_profit = float(dataset[_get_col(mapping, "profit")].sum()) if _get_col(mapping, "profit") in dataset.columns else None
     order_count = len(dataset)
     unique_customers = dataset[_get_col(mapping, "customer_id")].nunique() if _get_col(mapping, "customer_id") in dataset.columns else None
-    anomaly_count = None
-    anomaly_pct = None
 
-    top_metrics = st.columns(4)
-    metrics = [
-        ("Sales", total_sales, "#15803d"),
-        ("Profit", total_profit, "#b91c1c"),
-        ("Orders", order_count, "#1d4ed8"),
-        ("Customers", unique_customers, "#7c3aed"),
-    ]
-    for column, (label, value, color) in zip(top_metrics, metrics):
-        with column:
-            st.metric(label, f"{value:,.0f}" if isinstance(value, (int, float)) and value is not None else "N/A")
-
-    if _get_col(mapping, "order_date") and _get_col(mapping, "sales"):
-        monthly = build_monthly_sales_frame(dataset, _get_col(mapping, "order_date"), _get_col(mapping, "sales"))
-    else:
-        monthly = None
-
-    region_sales = None
-    if _get_col(mapping, "region") and _get_col(mapping, "sales"):
-        region_sales = build_region_sales_frame(dataset, _get_col(mapping, "region"), _get_col(mapping, "sales"))
+    monthly = build_monthly_sales_frame(dataset, _get_col(mapping, "order_date"), _get_col(mapping, "sales")) if _get_col(mapping, "order_date") and _get_col(mapping, "sales") else None
+    region_sales = build_region_sales_frame(dataset, _get_col(mapping, "region"), _get_col(mapping, "sales")) if _get_col(mapping, "region") and _get_col(mapping, "sales") else None
 
     rfm_artifacts = None
     if _get_col(mapping, "customer_id") and _get_col(mapping, "order_date") and _get_col(mapping, "sales"):
@@ -226,9 +245,6 @@ def render_dashboard() -> None:
             _get_col(mapping, "discount"),
             _get_col(mapping, "profit"),
         )
-        if anomaly_artifacts is not None:
-            anomaly_count = anomaly_artifacts.count
-            anomaly_pct = anomaly_artifacts.pct
 
     forecast_artifacts = None
     if _get_col(mapping, "order_date") and _get_col(mapping, "sales"):
@@ -243,12 +259,65 @@ def render_dashboard() -> None:
     summary = build_dashboard_summary(
         total_sales=total_sales,
         total_profit=total_profit,
-        anomaly_count=anomaly_count,
-        anomaly_pct=anomaly_pct,
+        anomaly_count=anomaly_artifacts.count if anomaly_artifacts is not None else None,
+        anomaly_pct=anomaly_artifacts.pct if anomaly_artifacts is not None else None,
         rfm_summary=rfm_artifacts.summary if rfm_artifacts else None,
         forecast=forecast_artifacts,
         anomalies=anomaly_artifacts,
     )
+
+    return {
+        "total_sales": total_sales,
+        "total_profit": total_profit,
+        "order_count": order_count,
+        "unique_customers": unique_customers,
+        "monthly": monthly,
+        "region_sales": region_sales,
+        "rfm_artifacts": rfm_artifacts,
+        "anomaly_artifacts": anomaly_artifacts,
+        "forecast_artifacts": forecast_artifacts,
+        "summary": summary,
+    }
+
+
+def render_dashboard() -> None:
+    dataset = st.session_state.dataset
+    mapping = st.session_state.resolved_mapping or {}
+    if dataset is None or not mapping:
+        return
+
+    dataset_signature = _dataset_signature(dataset)
+    if st.session_state.analysis is None or st.session_state.analysis_signature != dataset_signature:
+        with st.spinner("Preparing the dashboard — this may take a moment, please be patient..."):
+            st.session_state.analysis = _prepare_dashboard_analysis(dataset, mapping)
+            st.session_state.analysis_signature = dataset_signature
+
+    analysis = st.session_state.analysis or {}
+    total_sales = analysis.get("total_sales")
+    total_profit = analysis.get("total_profit")
+    order_count = analysis.get("order_count")
+    unique_customers = analysis.get("unique_customers")
+    monthly = analysis.get("monthly")
+    region_sales = analysis.get("region_sales")
+    rfm_artifacts = analysis.get("rfm_artifacts")
+    anomaly_artifacts = analysis.get("anomaly_artifacts")
+    forecast_artifacts = analysis.get("forecast_artifacts")
+    summary = analysis.get("summary") or {}
+    anomaly_count = anomaly_artifacts.count if anomaly_artifacts is not None else None
+    anomaly_pct = anomaly_artifacts.pct if anomaly_artifacts is not None else None
+
+    st.markdown('<h2 class="dashboard-heading">Retail Insights Dashboard</h2>', unsafe_allow_html=True)
+
+    top_metrics = st.columns(4)
+    metrics = [
+        ("Sales", total_sales, "#15803d"),
+        ("Profit", total_profit, "#b91c1c"),
+        ("Orders", order_count, "#1d4ed8"),
+        ("Customers", unique_customers, "#7c3aed"),
+    ]
+    for column, (label, value, color) in zip(top_metrics, metrics):
+        with column:
+            st.metric(label, f"{value:,.0f}" if isinstance(value, (int, float)) and value is not None else "N/A")
 
     left_col, right_col = st.columns(2)
     with left_col:
@@ -360,10 +429,10 @@ def render_dashboard() -> None:
             anomaly_artifacts=anomaly_artifacts,
             forecast_artifacts=forecast_artifacts,
         )
-        llm_question = "Write two concise paragraphs: one on what is working and one on what needs attention."
+        llm_question = "Write two concise paragraphs: one on what is working and one on what needs attention. Use bold for key figures, currency values, and percentages."
         with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
             llm_answer = generate_insights("\n".join(knowledge_base), llm_question)
-            st.text(_escape_dollar_signs(llm_answer))
+            _render_llm_response(_escape_dollar_signs(llm_answer))
 
     st.markdown("### Chat With the Dashboard")
     if "chat_history" not in st.session_state:
@@ -388,7 +457,7 @@ def render_dashboard() -> None:
         with st.chat_message("assistant"):
             with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
                 answer = answer_question(query, kb)
-                st.text(_escape_dollar_signs(answer))
+                _render_llm_response(_escape_dollar_signs(answer))
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
 
