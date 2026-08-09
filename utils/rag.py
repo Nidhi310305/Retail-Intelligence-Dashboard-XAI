@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import streamlit as st
 
 import numpy as np
 import traceback
@@ -91,13 +92,27 @@ def build_dashboard_knowledge_base(*, summary_chunks: list[str] | None = None, r
     return chunks
 
 
+@st.cache_data(ttl=60 * 60 * 24)
 def _embed_text(text: str) -> np.ndarray | None:
     client = get_gemini_client()
     if client is None:
         return None
-    try:
+    import concurrent.futures
+
+    LLM_TIMEOUT = 15
+
+    def _call_embed() -> np.ndarray | None:
         result = client.models.embed_content(model="gemini-embedding-001", contents=text)
         return np.array(result.embeddings[0].values)
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_call_embed)
+            try:
+                return fut.result(timeout=LLM_TIMEOUT)
+            except concurrent.futures.TimeoutError:
+                print(f"[Gemini] embed_content timed out after {LLM_TIMEOUT} seconds")
+                return None
     except Exception:
         return None
 
@@ -151,9 +166,24 @@ Answer in 2-4 sentences. Do not invent facts.
     if client is None:
         return "Answers are temporarily unavailable right now."
 
+    # Execute the LLM call with a timeout to avoid long hangs due to retries/backoff
+    import concurrent.futures
+
+    LLM_TIMEOUT = 15
+
+    def _call_generate() -> str:
+        resp = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
+        return getattr(resp, "text", "") or ""
+
     try:
-        response = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
-        return getattr(response, "text", "").strip() or "No response returned by Gemini."
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_call_generate)
+            try:
+                text = fut.result(timeout=LLM_TIMEOUT)
+                return text.strip() or "No response returned by Gemini."
+            except concurrent.futures.TimeoutError:
+                print(f"[Gemini] RAG generate_content timed out after {LLM_TIMEOUT} seconds")
+                return "Answers are temporarily unavailable right now."
     except Exception as exc:
         print(f"[Gemini] RAG generate_content failed: {exc}")
         print(traceback.format_exc())

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+import concurrent.futures
+import difflib
+import traceback
 
 from .llm import build_column_mapping_prompt, get_gemini_client, parse_json_response
 
@@ -62,10 +65,25 @@ def infer_column_mapping(columns: list[str]) -> dict[str, Any]:
         return {"mapping": mapping, "unresolved_roles": [role for role, info in mapping.items() if not info.get("column") or info.get("confidence", 0) < 0.8], "raw": None}
 
     prompt = build_column_mapping_prompt(columns, EXPECTED_ROLES)
+    parsed: dict[str, Any] = {}
+    LLM_TIMEOUT = 15
     try:
-        response = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
-        parsed = parse_json_response(getattr(response, "text", ""))
-    except Exception:
+        def _call_generate() -> str:
+            resp = client.models.generate_content(model="gemini-flash-latest", contents=prompt)
+            return getattr(resp, "text", "") or ""
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_call_generate)
+            try:
+                text = fut.result(timeout=LLM_TIMEOUT)
+                if text:
+                    parsed = parse_json_response(text)
+            except concurrent.futures.TimeoutError:
+                print(f"[Gemini] generate_content timed out after {LLM_TIMEOUT} seconds")
+                parsed = {}
+    except Exception as exc:
+        print(f"[Gemini] generate_content failed: {exc}")
+        traceback.print_exc()
         parsed = {}
 
     for role in EXPECTED_ROLES:
@@ -77,6 +95,33 @@ def infer_column_mapping(columns: list[str]) -> dict[str, Any]:
                 mapping[role] = {"column": column, "confidence": confidence, "source": "llm"}
             elif column is None:
                 mapping[role] = {"column": None, "confidence": confidence, "source": "llm"}
+
+    # If the LLM failed / timed out or didn't provide useful suggestions, try a fuzzy matching
+    unresolved = [role for role, info in mapping.items() if not info.get("column") or float(info.get("confidence", 0.0)) < 0.8]
+    if not parsed or unresolved:
+        normalized_columns = {_normalize(c): c for c in columns}
+
+        def _fuzzy_for_role(role_name: str) -> dict[str, Any]:
+            # consider expected role name and aliases as candidates
+            candidates = [role_name.replace("_", " ")] + list(ROLE_ALIASES.get(role_name, ()))
+            best = None
+            best_score = 0.0
+            for cand in candidates:
+                # match against normalized columns
+                matches = difflib.get_close_matches(_normalize(cand), list(normalized_columns.keys()), n=1, cutoff=0.6)
+                if matches:
+                    score = difflib.SequenceMatcher(a=_normalize(cand), b=matches[0]).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best = normalized_columns[matches[0]]
+            if best:
+                return {"column": best, "confidence": round(0.6 + best_score * 0.35, 2), "source": "fuzzy"}
+            return {"column": None, "confidence": 0.0, "source": "fuzzy"}
+
+        for role in unresolved:
+            # only replace if still unresolved or low confidence
+            if not mapping.get(role) or float(mapping.get(role, {}).get("confidence", 0.0)) < 0.8:
+                mapping[role] = _fuzzy_for_role(role)
 
     unresolved_roles = [role for role, info in mapping.items() if not info.get("column") or float(info.get("confidence", 0.0)) < 0.8]
     return {"mapping": mapping, "unresolved_roles": unresolved_roles, "raw": parsed}

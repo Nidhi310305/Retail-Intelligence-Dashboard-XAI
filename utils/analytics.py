@@ -166,6 +166,7 @@ def build_sales_forecast_frame(
     sales_column: str,
     region_column: str | None = None,
     category_column: str | None = None,
+    categorical_columns: list[str] | None = None,
 ) -> ForecastArtifacts | None:
     if not _require_columns(dataset, [date_column, sales_column]):
         return None
@@ -181,22 +182,30 @@ def build_sales_forecast_frame(
     working["Quarter"] = working[date_column].dt.quarter
 
     group_columns = ["Year", "Month", "Quarter"]
-    if region_column and region_column in working.columns:
-        group_columns.append(region_column)
-    if category_column and category_column in working.columns:
-        group_columns.append(category_column)
+    candidate_columns: list[str] = []
+    for column in [region_column, category_column, *(categorical_columns or [])]:
+        if column and column in working.columns and column not in candidate_columns:
+            candidate_columns.append(column)
+
+    for column in working.columns:
+        if column in {date_column, sales_column, "Year", "Month", "Quarter"}:
+            continue
+        if pd.api.types.is_numeric_dtype(working[column]):
+            continue
+        if column not in candidate_columns and working[column].nunique(dropna=True) <= 20:
+            candidate_columns.append(column)
+
+    group_columns.extend(candidate_columns)
 
     monthly = working.groupby(group_columns)[sales_column].sum().reset_index()
     if len(monthly) < 8:
         return None
 
     feature_frame = monthly.drop(columns=[sales_column]).copy()
-    encoders: dict[str, LabelEncoder] = {}
     for column in feature_frame.columns:
-        if feature_frame[column].dtype == object:
+        if not pd.api.types.is_numeric_dtype(feature_frame[column]):
             encoder = LabelEncoder()
             feature_frame[column] = encoder.fit_transform(feature_frame[column].astype(str))
-            encoders[column] = encoder
 
     X_train, X_test, y_train, y_test = train_test_split(feature_frame, monthly[sales_column], test_size=0.2, random_state=42)
     model = RandomForestRegressor(n_estimators=100, random_state=42)

@@ -95,12 +95,24 @@ Question:
 Answer in clear plain language and do not invent facts outside the context.
 """.strip()
 
+    # Run the Gemini call in a worker thread and enforce a timeout so the UI doesn't hang.
+    import concurrent.futures
+
+    LLM_TIMEOUT = 15
+
+    def _call_generate() -> str:
+        resp = client.models.generate_content(model="gemini-flash-latest", contents=full_prompt)
+        return getattr(resp, "text", "") or ""
+
     try:
-        response = client.models.generate_content(
-            model="gemini-flash-latest",
-            contents=full_prompt,
-        )
-        return getattr(response, "text", "").strip() or "No response returned by Gemini."
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(_call_generate)
+            try:
+                text = fut.result(timeout=LLM_TIMEOUT)
+                return text.strip() or "No response returned by Gemini."
+            except concurrent.futures.TimeoutError:
+                print(f"[Gemini] generate_content timed out after {LLM_TIMEOUT} seconds")
+                return "Insights are temporarily unavailable."
     except Exception as exc:
         print(f"[Gemini] generate_content failed: {exc}")
         print(traceback.format_exc())

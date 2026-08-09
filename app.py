@@ -99,6 +99,26 @@ def init_state() -> None:
         st.session_state.setdefault(key, value)
 
 
+# Cache wrappers to avoid repeated LLM calls across Streamlit reruns
+@st.cache_data
+def _cached_infer_mapping(dataset_signature: str, columns: tuple[str, ...]) -> dict:
+    return infer_column_mapping(list(columns))
+
+
+@st.cache_data(ttl=3600)
+def _cached_generate_insights(dataset_signature: str, context: str, question: str) -> str:
+    return generate_insights(context, question)
+
+
+@st.cache_data(ttl=3600)
+def _cached_answer_question(dataset_signature: str, query: str, kb_text: str) -> str:
+    # kb_text is the joined knowledge base used as cache key
+    from utils.rag import answer_question
+
+    kb_list = [line for line in kb_text.split("\n") if line.strip()]
+    return answer_question(query, kb_list)
+
+
 def _reset_dataset_state() -> None:
     st.session_state.dataset = None
     st.session_state.column_mapping_result = None
@@ -120,17 +140,19 @@ def show_landing() -> None:
         uploaded = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xlsx", "xls"])
     with sample_col:
         if st.button("Try with sample data"):
-            with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+            with st.spinner("Detecting your file's columns..."):
                 _reset_dataset_state()
                 st.session_state.dataset = load_sample_dataset(Path(__file__).parent / "Sample - Superstore.csv")
-                st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
+                sig = _dataset_signature(st.session_state.dataset)
+                st.session_state.column_mapping_result = _cached_infer_mapping(sig, tuple(st.session_state.dataset.columns.tolist()))
             st.rerun()
 
     if uploaded is not None:
-        with st.spinner("Analyzing your file — this may take a moment, please be patient..."):
+        with st.spinner("Detecting your file's columns..."):
             _reset_dataset_state()
             st.session_state.dataset = load_dataset(uploaded)
-            st.session_state.column_mapping_result = infer_column_mapping(st.session_state.dataset.columns.tolist())
+            sig = _dataset_signature(st.session_state.dataset)
+            st.session_state.column_mapping_result = _cached_infer_mapping(sig, tuple(st.session_state.dataset.columns.tolist()))
         st.rerun()
 
 
@@ -248,12 +270,39 @@ def _prepare_dashboard_analysis(dataset: pd.DataFrame, mapping: dict[str, str]) 
 
     forecast_artifacts = None
     if _get_col(mapping, "order_date") and _get_col(mapping, "sales"):
+        forecast_categorical_columns = []
+        for role in ["region", "category"]:
+            mapped_column = _get_col(mapping, role)
+            if mapped_column:
+                forecast_categorical_columns.append(mapped_column)
+
+        excluded_columns = {
+            _get_col(mapping, "order_date"),
+            _get_col(mapping, "sales"),
+            _get_col(mapping, "profit"),
+            _get_col(mapping, "discount"),
+            _get_col(mapping, "quantity"),
+            _get_col(mapping, "customer_id"),
+            "Order ID" if "Order ID" in dataset.columns else None,
+            "Product ID" if "Product ID" in dataset.columns else None,
+        }
+        excluded_columns = {column for column in excluded_columns if column}
+
+        for column in dataset.columns:
+            if column in excluded_columns or column in forecast_categorical_columns:
+                continue
+            if pd.api.types.is_numeric_dtype(dataset[column]):
+                continue
+            if dataset[column].nunique(dropna=True) <= 20:
+                forecast_categorical_columns.append(column)
+
         forecast_artifacts = build_sales_forecast_frame(
             dataset,
             _get_col(mapping, "order_date"),
             _get_col(mapping, "sales"),
             _get_col(mapping, "region"),
             _get_col(mapping, "category"),
+            categorical_columns=forecast_categorical_columns,
         )
 
     summary = build_dashboard_summary(
@@ -431,7 +480,8 @@ def render_dashboard() -> None:
         )
         llm_question = "Write two concise paragraphs: one on what is working and one on what needs attention. Use bold for key figures, currency values, and percentages."
         with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
-            llm_answer = generate_insights("\n".join(knowledge_base), llm_question)
+            kb_text = "\n".join(knowledge_base)
+            llm_answer = _cached_generate_insights(dataset_signature, kb_text, llm_question)
             _render_llm_response(_escape_dollar_signs(llm_answer))
 
     st.markdown("### Chat With the Dashboard")
@@ -456,7 +506,8 @@ def render_dashboard() -> None:
         st.session_state.chat_history.append({"role": "user", "content": query})
         with st.chat_message("assistant"):
             with st.spinner("Preparing your answer — this can take a minute, please be patient..."):
-                answer = answer_question(query, kb)
+                kb_text = "\n".join(kb)
+                answer = _cached_answer_question(dataset_signature, query, kb_text)
                 _render_llm_response(_escape_dollar_signs(answer))
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
