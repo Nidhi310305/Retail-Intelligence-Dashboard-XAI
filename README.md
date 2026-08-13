@@ -1,36 +1,35 @@
-
-
 # 🛍️ Retail Intelligence Dashboard with Explainable AI
-### AI-Enabled Business Analytics | Explainable AI | RAG Learning Journey
+### AI-Enabled Business Analytics | Explainable AI | RAG-Powered Insights
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)
 ![SHAP](https://img.shields.io/badge/Explainability-SHAP-green)
 ![RAG](https://img.shields.io/badge/LLM-RAG-purple)
-![Status](https://img.shields.io/badge/Status-In%20Progress-yellow)
+![Status](https://img.shields.io/badge/Status-Working%20Prototype-brightgreen)
 
 ---
 
 # 🧠 Project Overview
 
-An AI-powered Retail Intelligence Dashboard that transforms raw retail sales data into actionable business intelligence by combining traditional analytics, Machine Learning, Explainable AI, and modern Large Language Model (LLM) concepts.
+An AI-powered Retail Intelligence Dashboard that turns raw retail transaction data into explainable, actionable business insights — combining classical ML, Explainable AI (SHAP), and an LLM layer (Gemini) for natural-language insights and Retrieval-Augmented Generation (RAG).
 
-Originally developed as an academic extension of my Business Analytics internship at Maincrafts Technology, this project has evolved into a comprehensive AI portfolio project documenting both implementation and continuous learning in Explainable AI and Retrieval-Augmented Generation (RAG).
+Originally developed as an academic extension of my Business Analytics internship at Maincrafts Technology, this project grew from a notebook-based EDA/ML pipeline into a working Streamlit application with LLM-assisted dataset generalization — so it isn't limited to one fixed dataset schema.
+
+**This is a working prototype, not a finished product.** The core ML pipeline (forecasting, segmentation, anomaly detection, SHAP) runs entirely independently of any LLM and is fully reliable. The AI-generated insights and RAG chatbot depend on Gemini's free-tier API, which has a genuinely small daily request quota — the app is built to degrade gracefully (clear fallback messages, no crashes) when that quota is exhausted, rather than pretending otherwise.
 
 ---
 
 # 🎯 Problem Statement
 
-Traditional dashboards answer:
+Traditional dashboards answer: **What happened?**
 
-> **What happened?**
+This project aims to also answer:
 
-This project aims to answer:
-
-- Why did it happen?
-- What will happen next?
-- Which factors influenced the prediction?
-- How can AI systems retrieve trustworthy information using external knowledge?
+- Why did it happen? *(Explainable AI via SHAP)*
+- What will happen next? *(Forecasting)*
+- Which customers/transactions need attention? *(Segmentation + anomaly detection)*
+- Can I just ask a question instead of building a report? *(RAG-powered chat)*
+- Does this work on data that isn't Superstore specifically? *(LLM-assisted column mapping)*
 
 ---
 
@@ -38,108 +37,53 @@ This project aims to answer:
 
 | Module | Description | Status |
 |---------|-------------|--------|
-| 01 — Dataset Upload | Upload and validate retail CSV | ✅ Complete |
-| 02 — Automatic EDA | Statistical summaries and visualization | ✅ Complete |
-| 03 — Business KPIs | Sales, Profit, Region & Category Analysis | ✅ Complete |
-| 04 — Sales Forecasting | Random Forest Forecasting | ✅ Complete |
-| 05 — Customer Segmentation | KMeans using RFM Features | ✅ Complete |
-| 06 — Anomaly Detection | Isolation Forest | 🔄 In Progress |
-| 07 — Explainable AI | SHAP Analysis | ⏳ Pending |
-| 08 — Business Recommendations | Rule-Based Insights | ⏳ Pending |
-| 09 — Retrieval-Augmented Generation (Learning) | RAG Concepts & Implementation | 🚀 Ongoing |
+| 01 — Dataset Upload & Column Mapping | Upload CSV/XLSX; LLM auto-detects and maps columns to expected roles, with a clarification step for uncertain matches | ✅ Complete |
+| 02 — Automatic EDA | Statistical summaries, distributions, correlations | ✅ Complete |
+| 03 — Business KPIs | Sales, Profit, Orders, Customers, Region breakdown | ✅ Complete |
+| 04 — Sales Forecasting | Random Forest on aggregated monthly data | ✅ Complete |
+| 05 — Customer Segmentation | KMeans on RFM features (Recency, Frequency, Monetary) | ✅ Complete |
+| 06 — Anomaly Detection | Isolation Forest — flags both deep-loss and high-profit outlier transactions | ✅ Complete |
+| 07 — Explainable AI | SHAP on both the forecasting model and the anomaly detector, with a plain-language summary and a technical toggle | ✅ Complete |
+| 08 — AI Business Insights | Gemini-generated "what's working / what needs attention" summary, grounded in real computed findings | ✅ Complete |
+| 09 — RAG Chat | Ask questions about your dashboard; answers retrieved from a knowledge base built dynamically from your actual data (not hardcoded) | ✅ Complete |
+| 10 — Budget Intelligence *(future)* | Discount-safety thresholds, segment-based budget allocation simulator | ⏳ Planned |
+| Delivery Estimator *(future)* | Predicted delivery windows from historical ship-date patterns | ⏳ Planned |
 
 ---
 
 # 🛠 Tech Stack
 
-## Data Analytics
-
-- Python
-- Pandas
-- NumPy
+## Data & ML
+- Python, Pandas, NumPy
+- Scikit-learn — Random Forest (forecasting), KMeans (segmentation), Isolation Forest (anomaly detection)
+- SHAP — explainability for both the forecasting model and the anomaly detector
 
 ## Visualization
+- Plotly (interactive charts throughout the dashboard)
 
-- Plotly
-- Matplotlib
-- Seaborn
+## LLM / AI Layer
+- Google Gemini API (`gemini-flash-latest` for generation, `gemini-embedding-001` for embeddings)
+- Custom RAG pipeline — embeddings + cosine similarity retrieval over a dynamically built knowledge base (no LangChain/vector-DB dependency; built directly with `google-genai` + NumPy)
+- LLM-assisted column mapping for dataset generalization, with timeout + fuzzy-match fallback if the LLM is unavailable
 
-## Machine Learning
-
-- Scikit-learn
-- Random Forest
-- KMeans
-- Isolation Forest
-
-## Explainable AI
-
-- SHAP
-
-## Dashboard
-
-- Streamlit
-
-## Large Language Models
-
-- LangChain
-- Hugging Face
-- FAISS
-- Retrieval-Augmented Generation (RAG)
+## App
+- Streamlit, with a custom light theme and cache-based session state to avoid redundant LLM calls across reruns
 
 ---
 
 # 📊 Dataset
 
-Sample Superstore Dataset (Kaggle)
-
-- 9,994 Transactions
-- 21 Features
-- Sales
-- Profit
-- Region
-- Category
-- Discount
-- Order Date
+Developed and validated against the **Sample Superstore dataset** (Kaggle) — 9,994 transactions, 21 columns (order date, ship date, customer, sales, profit, discount, quantity, region, category, etc.) — but the column-mapping layer is designed to generalize to other retail transactional datasets with a similar shape.
 
 ---
 
-# 🔍 Key Findings
+# 🔍 Key Findings (Sample Superstore dataset)
 
-- West Region contributes **31.58%** of total sales.
-- Technology category generates **50.8%** of total profit.
-- Discounts above **20%** generally lead to negative average profit.
-- Approximately **18.72%** of all transactions resulted in losses.
-- Sales exhibit strong seasonal behavior with Q4 peaks.
-- Transaction-level forecasting requires richer external features for robust prediction.
-
----
-
-# 🤖 Retrieval-Augmented Generation (RAG) Learning Journey
-
-Alongside the dashboard, I am documenting my hands-on learning journey in Retrieval-Augmented Generation.
-
-## Current Topics
-
-- Introduction to Large Language Models
-- Why RAG is needed
-- Limitations of LLMs
-- Hallucinations
-- Knowledge Cutoff
-- Private Knowledge
-- Retrieval vs Training
-
-## Upcoming Topics
-
-- Embeddings
-- Semantic Search
-- Chunking
-- Vector Databases
-- FAISS
-- Retrieval Pipeline
-- Prompt Augmentation
-- LangChain
-- Local RAG
-- Advanced RAG Architectures
+- Discount-profitability breakeven sits around **20%** — discounts beyond that point are reliably associated with negative profit, confirmed independently through EDA, anomaly detection, *and* SHAP.
+- RFM segmentation (KMeans, k=4) identifies four clear customer groups: **Champions, Loyal High-Value, At-Risk, and Lost/Churned** — each with distinct recency/frequency/monetary profiles.
+- Isolation Forest flags ~5% of transactions as anomalous, splitting cleanly into two tails: **deep-loss** (high discount + large negative profit) and **high-profit** (zero discount, large B2B orders) — both are legitimate patterns, not data errors.
+- SHAP shows **Month/seasonality** as the strongest driver of the sales forecast, and **Quantity + Discount** as the strongest drivers behind flagged anomalies.
+- The forecasting model's R² (~0.11–0.13) is modest — documented honestly as a finding: transaction-level retail sales forecasting needs richer external signals (promotions, macro data) to move beyond directional accuracy.
 
 ---
 
@@ -147,97 +91,62 @@ Alongside the dashboard, I am documenting my hands-on learning journey in Retrie
 
 ```text
 Retail-Intelligence-Dashboard-XAI/
-
 │
-├── data/
-│   └── Sample-Superstore.csv
+├── app.py                     # Streamlit entrypoint and full app flow
+├── requirements.txt
+├── .env.example                # Template for GEMINI_API_KEY (never commit the real .env)
+├── Sample - Superstore.csv     # Reference dataset
 │
-├── notebooks/
-│   └── Superstore_EDA_ML.ipynb
+├── utils/
+│   ├── data_loader.py          # CSV/XLSX loading
+│   ├── column_mapping.py       # LLM-assisted column role detection + fallback
+│   ├── analytics.py            # RFM, forecasting, anomaly detection, SHAP
+│   ├── llm.py                  # Gemini client + insight generation (timeout-protected)
+│   ├── rag.py                  # Knowledge base construction, embeddings, retrieval, chat
+│   └── ui.py
 │
-├── app/
-│   └── app.py
-│
-├── assets/
-│   └── screenshots/
-│
-├── learning/
-│
-│   └── rag/
-│       ├── 01-about-rag/
-│       ├── 02-embeddings/
-│       ├── 03-vector-database/
-│       ├── 04-chunking/
-│       ├── 05-retrieval/
-│       ├── 06-augmentation/
-│       ├── 07-generation/
-│       ├── 08-langchain/
-│       ├── 09-local-rag/
-│       └── 10-advanced-rag/
+├── About-RAG/, ML-04-Isolation-Forest.md, Retail-AI-03-*.md
+│                                # Earlier learning-journey notes from the RAG/ML build process
 │
 └── README.md
 ```
 
 ---
 
-# 📈 Progress Log
+# ⚠️ Known Limitations (Honest Section)
 
-| Date | Progress |
-|------|----------|
-| June 25–27, 2026 | Internship Task 1 — Excel, SQL & Power BI Dashboard |
-| June 29, 2026 | Python EDA Pipeline |
-| July 4, 2026 | Sales Forecasting |
-| July 5, 2026 | Customer Segmentation |
-| August 2026 | Started Retrieval-Augmented Generation (RAG) Learning Journey |
-
----
-
-# 🎓 Academic Context
-
-**Student**
-
-Nidhi Sharma
-
-**Program**
-
-B.Tech Computer Science & Engineering (AI & ML)
-
-**College**
-
-Jawaharlal Nehru Government Engineering College (JNGEC), Sundernagar
-
-**Minor**
-
-Data Science & Machine Learning
-
-**Internship**
-
-Maincrafts Technology
-
-Business Analytics
+- **Gemini free-tier quota is small** — AI insights and chat may show a graceful fallback message under heavy use rather than a live response. The rest of the dashboard is unaffected.
+- **Column-mapping is wired into the upload flow**, but not yet retrofitted across every internal module — some analytics functions still expect fairly standard column names under the hood. A full retrofit is on the roadmap.
+- **RAG answers are limited to precomputed findings** in the knowledge base — it can summarize and explain what's already been calculated (region sales, segments, anomalies, trends), but can't yet perform new on-the-fly calculations beyond that. Extending this to agentic tool-calling is a planned next step.
+- **Not a live/real-time system** — works on a single uploaded snapshot per session, not streaming or connected data sources.
 
 ---
 
 # 🚀 Future Roadmap
 
-- Complete Explainable AI Module
-- Build Local RAG Application using LangChain
-- Integrate RAG with Business Dashboard
-- Deploy using Streamlit Cloud
-- Improve ML Forecasting Pipeline
-- Add Conversational Business Analytics Assistant
+- **Module 10 — Budget Intelligence:** discount-safety thresholds, segment-based retention budget allocation, a live what-if discount simulator
+- **Delivery Estimator:** predicted delivery windows from historical ship-date patterns by region/ship mode
+- **Agentic RAG:** move from fixed knowledge-base retrieval to LLM tool-calling, so the chat can compute new answers on demand instead of only summarizing precomputed findings
+- **Full column-mapping retrofit** across every analytics module, not just the upload step
+- Deploy a public demo instance once a higher-tier LLM quota is in place
+
+---
+
+# 🎓 Academic Context
+
+**Student:** Nidhi Sharma
+**Program:** B.Tech Computer Science & Engineering (AI & ML), Minor in Data Science & Machine Learning
+**College:** Jawaharlal Nehru Government Engineering College (JNGEC), Sundernagar
+**Internship:** Maincrafts Technology — Business Analytics
 
 ---
 
 # 🌱 Learning Philosophy
 
-This repository reflects my approach to learning AI through implementation. Each commit represents a real milestone—from business analytics and machine learning to explainable AI and Retrieval-Augmented Generation—documenting not only completed features but also the concepts explored and lessons learned along the way.
+This repository reflects an approach to learning AI through implementation rather than theory alone. Every module here — from RFM math to SHAP interpretation to debugging LLM rate limits at inconvenient hours — was built, broken, and fixed in the process of actually shipping something. The commit history is the honest version of the story.
 
 ---
 
 ## ⭐ Status
 
-**Actively under development.**
-
-New commits represent ongoing implementation, experimentation, and continuous learning in AI, Explainable AI, and Retrieval-Augmented Generation.
-
+**Working prototype.** Core ML pipeline (Modules 1–7) is fully functional and independent of any external API. AI insights and RAG chat (Modules 8–9) depend on Gemini API availability. Actively maintained as time allows.
